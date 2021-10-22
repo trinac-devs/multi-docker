@@ -1,0 +1,41 @@
+sudo: required
+language: generic
+
+# It installs docker on the machine
+services: 
+  - docker
+
+# Series of command to run before we deploy a project or run a test
+before_install:
+  - docker build -t codetraxx/react-test -f ./client/Dockerfile.dev ./client
+  
+script:
+  - docker run -e CI=true codetraxx/react-test npm run test
+  
+after_success:
+  - docker build -t codetraxx/multi-client ./client
+  - docker build -t codetraxx/multi-nginx ./nginx
+  - docker build -t codetraxx/multi-server ./server 
+  - docker build -t codetraxx/multi-worker ./worker 
+  
+  # Login to docker CLI
+  - echo "$DOCKER_PASSWORD" | docker login -u "$DOCKER_ID" --password-stdin
+  - docker push codetraxx/multi-client
+  - docker push codetraxx/multi-nginx
+  - docker push codetraxx/multi-server
+  - docker push codetraxx/multi-worker
+  
+
+# deploy:
+#   provider: elasticbeanstalk
+#   region: "eu-west-2"
+#   app: "docker-react"
+#   env: "Dockerreact-env"
+#   bucket_name: "elasticbeanstalk-eu-west-2-860984055984"
+#   bucket_path: "docker-react"
+#   on: 
+#     branch: main
+#   access_key_id: $AWS_ACCESS_KEY
+#   secret_access_key: $AWS_SECRET_KEY
+
+ 
